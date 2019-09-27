@@ -14,8 +14,8 @@ class Detector(object):
         self.method = cv2.TM_SQDIFF_NORMED
         self.sct = mss.mss()
         self.fish_region = (880, 300, 150, 150)
-        self.label_region = {"left": 1789, "top": 914,
-                             "width": 60, "height": 40}
+        self.label_region = {"left": 1739, "top": 919,
+                             "width": 50, "height": 31}
         self.label_co = 0.9
         self.change_co = 0.975
         self.loc = None
@@ -27,6 +27,7 @@ class Detector(object):
                        dtype=np.uint8)[:, :, :3]
         res = cv2.matchTemplate(img, self.template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+        # print(min_val, max_val)
         if min_val < 1 - self.label_co:
             return True
         return False
@@ -69,7 +70,7 @@ def fishing():
     pyautogui.moveTo(1920 // 2, 1080 // 2 + 50)
     time.sleep(2)
     # 扔鱼竿
-    pyautogui.hotkey('alt', '0')
+    pyautogui.hotkey('ctrl', '=')
     time.sleep(1)
     # 找浮标
     loc = detector.detect_buoy()
