@@ -17,7 +17,7 @@ class Detector(object):
         self.label_region = {"left": 1789, "top": 914,
                              "width": 60, "height": 40}
         self.label_co = 0.9
-        self.change_co = 0.96
+        self.change_co = 0.975
         self.loc = None
         self.buoy_region = None
         self.buoy_template = None
