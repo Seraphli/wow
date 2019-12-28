@@ -4,15 +4,15 @@ from datetime import datetime
 import random
 
 # 做水和面包数量
-nums = [0, 0, 2, 6]
+nums = [0, 0, 18, 10]
 
 
 def action(count):
     pyautogui.keyDown('w')
-    time.sleep(1)
+    time.sleep(0.5)
     pyautogui.keyUp('w')
     pyautogui.keyDown('w')
-    time.sleep(1)
+    time.sleep(0.5)
     pyautogui.keyUp('w')
     time.sleep(random.randint(1, 3))
     # 上Buff
@@ -23,28 +23,28 @@ def action(count):
         pyautogui.hotkey('ctrl', '2')
         time.sleep(5)
     if random.random() < 0.5:
-        pyautogui.hotkey('ctrl', '3')
+        pyautogui.hotkey('ctrl', '4')
         time.sleep(5)
     if random.random() < 0.5:
         # 做面包吃面包
         if nums[0] > 0:
-            pyautogui.hotkey('ctrl', '7')
+            pyautogui.hotkey('ctrl', '8')
             nums[0] -= 1
         else:
-            pyautogui.hotkey('ctrl', '5')
+            pyautogui.hotkey('ctrl', '6')
             nums[0] += nums[2]
-        time.sleep(5)
+        time.sleep(15)
         pyautogui.press('space')
         time.sleep(2)
     if random.random() < 0.5:
         # 做水喝水
         if nums[1] > 0:
-            pyautogui.hotkey('ctrl', '8')
+            pyautogui.hotkey('ctrl', '9')
             nums[1] -= 1
         else:
-            pyautogui.hotkey('ctrl', '6')
+            pyautogui.hotkey('ctrl', '7')
             nums[1] += nums[3]
-        time.sleep(5)
+        time.sleep(15)
         pyautogui.press('space')
         time.sleep(2)
 
