@@ -7,7 +7,7 @@ import pyautogui
 import os
 from send_email_script import send_mail, mailto_list
 
-COUNT = 10000000
+COUNT = 1000000
 
 
 class Detector(object):
@@ -25,6 +25,11 @@ class Detector(object):
         self.loc = None
         self.buoy_region = None
         self.buoy_template = None
+
+    def reset_mss(self):
+        self.sct.close()
+        time.sleep(5)
+        self.sct = mss.mss()
 
     @staticmethod
     def read_list(path):
@@ -165,6 +170,8 @@ detector = Detector()
 time.sleep(5)
 c = 0
 failed = 0
+pyautogui.press('b')
+time.sleep(1)
 while c < COUNT:
     if fishing():
         c += 1
@@ -174,6 +181,6 @@ while c < COUNT:
         if failed == 5:
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
     if c % 50 == 0:
-        logout_login()
+        detector.reset_mss()
 
 detector.close()
