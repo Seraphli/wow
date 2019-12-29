@@ -148,6 +148,19 @@ def fishing():
     return flag
 
 
+def logout_login():
+    pyautogui.press('esc')
+    time.sleep(1)
+    pyautogui.press('esc')
+    time.sleep(5)
+    pyautogui.click(960, 618)
+    time.sleep(30)
+    pyautogui.click(960, 988)
+    time.sleep(30)
+    pyautogui.press('b')
+    time.sleep(1)
+
+
 detector = Detector()
 time.sleep(5)
 c = 0
@@ -160,5 +173,7 @@ while c < COUNT:
         failed += 1
         if failed == 5:
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
+    if c % 50 == 0:
+        logout_login()
 
 detector.close()
