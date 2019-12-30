@@ -15,9 +15,11 @@ class Detector(object):
         self.template = cv2.imread('buoy_label.png')
         self.click_list = self.read_list('./fishing/click_list')
         self.black_list = self.read_list('./fishing/black_list')
+        self.error_list = self.read_list('./fishing/error_list')
         self.method = cv2.TM_SQDIFF_NORMED
         self.sct = mss.mss()
-        self.fish_region = (880, 300, 150, 150)
+        self.sct.__enter__()
+        self.fish_region = (865, 300, 150, 150)
         self.label_region = {"left": 1739, "top": 919,
                              "width": 50, "height": 31}
         self.label_co = 0.9
@@ -27,9 +29,10 @@ class Detector(object):
         self.buoy_template = None
 
     def reset_mss(self):
-        self.sct.close()
+        self.sct.__exit__()
         time.sleep(5)
         self.sct = mss.mss()
+        self.sct.__enter__()
 
     @staticmethod
     def read_list(path):
@@ -65,6 +68,8 @@ class Detector(object):
                         "height": 60 - (self.fish_region[3] // 30 - self.j) * 2
                     }
                     return self.loc
+                else:
+                    time.sleep(0.01)
         return None
 
     def save_buoy(self):
@@ -89,8 +94,8 @@ class Detector(object):
             return True
         return False
 
-    def match_image(self, fn, img, template):
-        res = cv2.matchTemplate(img, template, self.method)
+    def match_image(self, fn, _img, template):
+        res = cv2.matchTemplate(_img, template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         # print(fn, min_val, max_val)
         if min_val < 0.08:
@@ -100,14 +105,22 @@ class Detector(object):
     def wrap_up(self):
         screen = np.array(self.sct.grab(self.sct.monitors[1]),
                           dtype=np.uint8)[:, :, :3]
+        click_flag = False
         for fn, img in self.click_list:
             res = self.match_image(fn, screen, img)
+            time.sleep(0.02)
             if res[0]:
                 pyautogui.rightClick(res[1][0] + 10, res[1][1] + 10)
-                time.sleep(1)
+                time.sleep(3)
+                click_flag = True
+
+        if click_flag:
+            screen = np.array(self.sct.grab(self.sct.monitors[1]),
+                              dtype=np.uint8)[:, :, :3]
 
         for fn, img in self.black_list:
             res = self.match_image(fn, screen, img)
+            time.sleep(0.02)
             if res[0]:
                 pyautogui.leftClick(res[1][0] + 10, res[1][1] + 10)
                 time.sleep(0.2)
@@ -116,8 +129,32 @@ class Detector(object):
                 pyautogui.leftClick(877, 233)
                 time.sleep(0.2)
 
+    def detect_error(self):
+        screen = np.array(self.sct.grab(self.sct.monitors[1]),
+                          dtype=np.uint8)[:, :, :3]
+        for fn, img in self.error_list:
+            res = self.match_image(fn, screen, img)
+            if res[0]:
+                pyautogui.leftClick(res[1][0] + 10, res[1][1] + 10)
+                time.sleep(1)
+                pyautogui.leftClick(1805, 1010)
+                time.sleep(15)
+                break
+
+        time.sleep(30)
+        screen = np.array(self.sct.grab(self.sct.monitors[1]),
+                          dtype=np.uint8)[:, :, :3]
+        for fn, img in self.error_list:
+            if fn == 'enter.png':
+                res = self.match_image(fn, screen, img)
+                if res[0]:
+                    pyautogui.leftClick(res[1][0] + 10, res[1][1] + 10)
+                    time.sleep(20)
+                    pyautogui.click(960, 988)
+                    time.sleep(30)
+
     def close(self):
-        self.sct.close()
+        self.sct.__exit__()
 
 
 def fishing():
@@ -137,7 +174,7 @@ def fishing():
     st = time.time()
     while time.time() - st < 2:
         threshold.append(detector.sample_threshold())
-        time.sleep(0.02)
+        time.sleep(0.05)
     detector.change_co = max(threshold) + np.std(threshold)
     # 等鱼上钩
     st = time.time()
@@ -147,7 +184,7 @@ def fishing():
             flag = True
             break
         else:
-            time.sleep(0.02)
+            time.sleep(0.05)
     time.sleep(2)
     detector.wrap_up()
     return flag
@@ -166,6 +203,7 @@ def logout_login():
     time.sleep(1)
 
 
+pyautogui.FAILSAFE = False
 detector = Detector()
 time.sleep(5)
 c = 0
@@ -173,14 +211,18 @@ failed = 0
 pyautogui.press('b')
 time.sleep(1)
 while c < COUNT:
-    if fishing():
+    res = fishing()
+    if res:
         c += 1
         failed = 0
     else:
         failed += 1
+        if failed > 2:
+            detector.detect_error()
         if failed == 5:
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
     if c % 50 == 0:
+        print('Reset')
         detector.reset_mss()
 
 detector.close()
