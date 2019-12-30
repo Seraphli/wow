@@ -7,19 +7,20 @@ import pyautogui
 import os
 from send_email_script import send_mail, mailto_list
 
-COUNT = 1000000
+COUNT = 100000
 
 
 class Detector(object):
     def __init__(self):
-        self.template = cv2.imread('buoy_label.png')
+        self.template = cv2.imread('./fishing/buoy_label.png')
+        self.backpack = cv2.imread('./fishing/backpack.png')
         self.click_list = self.read_list('./fishing/click_list')
         self.black_list = self.read_list('./fishing/black_list')
         self.error_list = self.read_list('./fishing/error_list')
         self.method = cv2.TM_SQDIFF_NORMED
         self.sct = mss.mss()
         self.sct.__enter__()
-        self.fish_region = (865, 300, 150, 150)
+        self.fish_region = (870, 300, 150, 150)
         self.label_region = {"left": 1739, "top": 919,
                              "width": 50, "height": 31}
         self.label_co = 0.9
@@ -98,7 +99,7 @@ class Detector(object):
         res = cv2.matchTemplate(_img, template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         # print(fn, min_val, max_val)
-        if min_val < 0.08:
+        if min_val < 0.04:
             return True, min_loc
         return False, None
 
@@ -153,6 +154,15 @@ class Detector(object):
                     pyautogui.click(960, 988)
                     time.sleep(30)
 
+    def detect_backpack(self):
+        screen = np.array(self.sct.grab(self.sct.monitors[1]),
+                          dtype=np.uint8)[:, :, :3]
+        res = cv2.matchTemplate(screen, self.backpack, self.method)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+        if min_val > 0.04:
+            pyautogui.press('b')
+            time.sleep(1)
+
     def close(self):
         self.sct.__exit__()
 
@@ -163,7 +173,7 @@ def fishing():
     time.sleep(0.5)
     # 扔鱼竿
     pyautogui.hotkey('ctrl', '=')
-    time.sleep(1)
+    time.sleep(1.4)
     # 找浮标
     loc = detector.detect_buoy()
     if loc is None:
@@ -190,26 +200,11 @@ def fishing():
     return flag
 
 
-def logout_login():
-    pyautogui.press('esc')
-    time.sleep(1)
-    pyautogui.press('esc')
-    time.sleep(5)
-    pyautogui.click(960, 618)
-    time.sleep(30)
-    pyautogui.click(960, 988)
-    time.sleep(30)
-    pyautogui.press('b')
-    time.sleep(1)
-
-
 pyautogui.FAILSAFE = False
 detector = Detector()
-time.sleep(5)
 c = 0
 failed = 0
-pyautogui.press('b')
-time.sleep(1)
+detector.detect_backpack()
 while c < COUNT:
     res = fishing()
     if res:
@@ -221,8 +216,5 @@ while c < COUNT:
             detector.detect_error()
         if failed == 5:
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
-    if c % 50 == 0:
-        print('Reset')
-        detector.reset_mss()
 
 detector.close()
