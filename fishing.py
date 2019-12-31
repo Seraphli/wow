@@ -182,13 +182,12 @@ def fishing():
     # 检测鱼鳔处变化趋势
     threshold = []
     st = time.time()
-    while time.time() - st < 2:
+    while time.time() - st < 1.2:
         threshold.append(detector.sample_threshold())
-        time.sleep(0.05)
-    detector.change_co = max(threshold) + np.std(threshold)
+    detector.change_co = max(threshold) + np.std(threshold) + 0.02
     # 等鱼上钩
     st = time.time()
-    while time.time() - st < 25:
+    while time.time() - st < 23:
         if detector.detect_buoy_change():
             pyautogui.rightClick(*loc)
             flag = True
