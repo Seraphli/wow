@@ -182,9 +182,9 @@ def fishing():
     # 检测鱼鳔处变化趋势
     threshold = []
     st = time.time()
-    while time.time() - st < 1.5:
+    while time.time() - st < 2:
         threshold.append(detector.sample_threshold())
-    detector.change_co = max(threshold) + np.std(threshold)
+    detector.change_co = np.mean(threshold) + np.std(threshold) * 3
     # 等鱼上钩
     st = time.time()
     while time.time() - st < 23:
