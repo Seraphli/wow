@@ -99,7 +99,7 @@ class Detector(object):
         res = cv2.matchTemplate(_img, template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         # print(fn, min_val, max_val)
-        if min_val < 0.04:
+        if min_val < 0.06:
             return True, min_loc
         return False, None
 
@@ -182,9 +182,9 @@ def fishing():
     # 检测鱼鳔处变化趋势
     threshold = []
     st = time.time()
-    while time.time() - st < 1.2:
+    while time.time() - st < 1.5:
         threshold.append(detector.sample_threshold())
-    detector.change_co = max(threshold) + np.std(threshold) + 0.02
+    detector.change_co = max(threshold) + np.std(threshold)
     # 等鱼上钩
     st = time.time()
     while time.time() - st < 23:
@@ -201,6 +201,7 @@ def fishing():
 
 pyautogui.FAILSAFE = False
 detector = Detector()
+time.sleep(5)
 c = 0
 failed = 0
 detector.detect_backpack()
@@ -214,6 +215,7 @@ while c < COUNT:
         if failed > 2:
             detector.detect_error()
         if failed == 5:
+            print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
 
 detector.close()
