@@ -17,6 +17,7 @@ class Detector(object):
         self.click_list = self.read_list('./fishing/click_list')
         self.black_list = self.read_list('./fishing/black_list')
         self.error_list = self.read_list('./fishing/error_list')
+        self.warn_list = self.read_list('./fishing/warn_list')
         self.method = cv2.TM_SQDIFF_NORMED
         self.sct = mss.mss()
         self.sct.__enter__()
@@ -95,11 +96,11 @@ class Detector(object):
             return True
         return False
 
-    def match_image(self, fn, _img, template):
+    def match_image(self, fn, _img, template, threshold=0.06):
         res = cv2.matchTemplate(_img, template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         # print(fn, min_val, max_val)
-        if min_val < 0.06:
+        if min_val < threshold:
             return True, min_loc
         return False, None
 
@@ -129,6 +130,14 @@ class Detector(object):
                 time.sleep(0.2)
                 pyautogui.leftClick(877, 233)
                 time.sleep(0.2)
+
+    def detect_gm(self):
+        screen = np.array(self.sct.grab(self.sct.monitors[1]),
+                          dtype=np.uint8)[:, :, :3]
+        for fn, img in self.warn_list:
+            res = self.match_image(fn, screen, img, threshold=0.1)
+            if res[0]:
+                send_mail(mailto_list, "Fishing", "GM Warning!")
 
     def detect_error(self):
         screen = np.array(self.sct.grab(self.sct.monitors[1]),
@@ -217,5 +226,8 @@ while c < COUNT:
         if failed == 5:
             print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
+
+    if c % 5 == 0:
+        detector.detect_gm()
 
 detector.close()
