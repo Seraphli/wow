@@ -24,7 +24,7 @@ class Detector(object):
         self.fish_region = (870, 300, 150, 150)
         self.label_region = {"left": 1739, "top": 919,
                              "width": 50, "height": 31}
-        self.label_co = 0.9
+        self.label_co = 0.75
         self.change_co = 1
         self.loc = None
         self.buoy_region = None
@@ -203,8 +203,6 @@ def fishing():
             break
         else:
             time.sleep(0.05)
-    time.sleep(2)
-    detector.wrap_up()
     return flag
 
 
@@ -226,6 +224,10 @@ while c < COUNT:
         if failed == 5:
             print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
+
+    if c % 20 == 0:
+        time.sleep(2)
+        detector.wrap_up()
 
     if c % 5 == 0:
         detector.detect_gm()
