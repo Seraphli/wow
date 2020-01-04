@@ -104,25 +104,21 @@ class Detector(object):
             return True, min_loc
         return False, None
 
+    def pre_wrap_up(self):
+        screen = np.array(self.sct.grab(self.sct.monitors[1]),
+                          dtype=np.uint8)[:, :, :3]
+        for fn, img in self.click_list:
+            res = self.match_image(fn, screen, img)
+            if res[0]:
+                time.sleep(0.5)
+                pyautogui.rightClick(res[1][0] + 10, res[1][1] + 10)
+
     def wrap_up(self):
         screen = np.array(self.sct.grab(self.sct.monitors[1]),
                           dtype=np.uint8)[:, :, :3]
-        click_flag = False
-        for fn, img in self.click_list:
-            res = self.match_image(fn, screen, img)
-            time.sleep(0.02)
-            if res[0]:
-                pyautogui.rightClick(res[1][0] + 10, res[1][1] + 10)
-                time.sleep(3)
-                click_flag = True
-
-        if click_flag:
-            screen = np.array(self.sct.grab(self.sct.monitors[1]),
-                              dtype=np.uint8)[:, :, :3]
 
         for fn, img in self.black_list:
             res = self.match_image(fn, screen, img)
-            time.sleep(0.02)
             if res[0]:
                 pyautogui.leftClick(res[1][0] + 10, res[1][1] + 10)
                 time.sleep(0.2)
@@ -225,6 +221,7 @@ while c < COUNT:
             print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
 
+    detector.pre_wrap_up()
     if c % 20 == 0:
         time.sleep(2)
         detector.wrap_up()
