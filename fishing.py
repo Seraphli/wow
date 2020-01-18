@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import pyautogui
 import os
+import win32gui
 from send_email_script import send_mail, mailto_list
 
 COUNT = 100000
@@ -148,6 +149,26 @@ class Detector(object):
                 break
 
         time.sleep(30)
+
+        def handler(hwnd, windows):
+            windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+
+        def switch_to_window(hwnd):
+            win32gui.ShowWindow(hwnd, 5)  # SW_SHOW
+            win32gui.SetForegroundWindow(hwnd)
+
+        try:
+            all_windows = []
+            bn_windows = None
+            win32gui.EnumWindows(handler, all_windows)
+            for i in all_windows:
+                if "暴雪战网" in i[1]:
+                    bn_windows = i[0]
+
+            switch_to_window(bn_windows)
+        except:
+            pass
+
         screen = np.array(self.sct.grab(self.sct.monitors[1]),
                           dtype=np.uint8)[:, :, :3]
         for fn, img in self.error_list:
@@ -158,6 +179,8 @@ class Detector(object):
                     time.sleep(20)
                     pyautogui.click(960, 988)
                     time.sleep(30)
+
+        return True
 
     def detect_backpack(self):
         screen = np.array(self.sct.grab(self.sct.monitors[1]),
@@ -216,7 +239,9 @@ while c < COUNT:
     else:
         failed += 1
         if failed > 2:
-            detector.detect_error()
+            if detector.detect_error():
+                pyautogui.press('0')
+                detector.detect_backpack()
         if failed == 5:
             print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
