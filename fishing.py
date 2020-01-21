@@ -166,6 +166,7 @@ class Detector(object):
                     bn_windows = i[0]
 
             switch_to_window(bn_windows)
+            time.sleep(30)
         except:
             pass
 
@@ -176,7 +177,7 @@ class Detector(object):
                 res = self.match_image(fn, screen, img)
                 if res[0]:
                     pyautogui.leftClick(res[1][0] + 10, res[1][1] + 10)
-                    time.sleep(20)
+                    time.sleep(30)
                     pyautogui.click(960, 988)
                     time.sleep(30)
 
@@ -238,10 +239,12 @@ while c < COUNT:
         failed = 0
     else:
         failed += 1
-        if failed > 2:
+        if 2 < failed < 6:
             if detector.detect_error():
                 pyautogui.press('0')
+                time.sleep(5)
                 detector.detect_backpack()
+                send_mail(mailto_list, "Fishing", "Restart after disconnection.")
         if failed == 5:
             print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
