@@ -13,20 +13,25 @@ COUNT = 100000
 
 class Detector(object):
     def __init__(self):
-        self.template = cv2.imread('./fishing/buoy_label.png')
-        self.backpack = cv2.imread('./fishing/backpack.png')
-        self.click_list = self.read_list('./fishing/click_list')
-        self.black_list = self.read_list('./fishing/black_list')
+        self.template = cv2.imread('./fishing/buoy_label_elvui.png')
+        self.backpack = cv2.imread('./fishing/backpack_elvui.png')
+        self.click_list = self.read_list('./fishing/click_list_elvui')
+        self.black_list = self.read_list('./fishing/black_list_elvui')
         self.error_list = self.read_list('./fishing/error_list')
         self.warn_list = self.read_list('./fishing/warn_list')
         self.method = cv2.TM_SQDIFF_NORMED
         self.sct = mss.mss()
         self.sct.__enter__()
-        self.fish_region = (870, 300, 150, 150)
-        self.label_region = {"left": 1739, "top": 919,
-                             "width": 50, "height": 31}
-        self.label_co = 0.75
-        self.change_co = 1
+        self.fish_region = (870, 360, 150, 90)
+        self.label_region = {"left": 1857, "top": 746,
+                             "width": 60, "height": 40}
+        self.label_co = 0.9
+        self.threshold = np.zeros(
+            (self.fish_region[2] // 30 + 1,
+             self.fish_region[3] // 30 + 1, 100))
+        self.threshold_idx = np.zeros(
+            (self.fish_region[2] // 30 + 1,
+             self.fish_region[3] // 30 + 1), dtype=np.int)
         self.loc = None
         self.buoy_region = None
         self.buoy_template = None
@@ -62,6 +67,7 @@ class Detector(object):
                 pyautogui.moveTo(x, y)
                 if self.detect_label():
                     self.loc = x, y
+                    self.i = i // 30
                     self.j = j // 30
                     pyautogui.moveTo(*self.loc)
                     self.buoy_region = {
@@ -85,19 +91,28 @@ class Detector(object):
                        dtype=np.uint8)[:, :, :3]
         res = cv2.matchTemplate(img, self.buoy_template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+        self.threshold[self.i, self.j,
+                       self.threshold_idx[self.i, self.j]] = min_val
+        self.threshold_idx[self.i, self.j] = \
+            (self.threshold_idx[self.i, self.j] + 1) % 100
         return min_val
 
+    def threshold_init_done(self):
+        return self.threshold[self.i, self.j, 60] > 0
+
     def detect_buoy_change(self):
+        change_co = np.mean(self.threshold[self.i, self.j]) + np.std(
+            self.threshold[self.i, self.j]) * (3.21 + self.j * 0.005)
         img = np.array(self.sct.grab(self.buoy_region),
                        dtype=np.uint8)[:, :, :3]
         res = cv2.matchTemplate(img, self.buoy_template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         # print(min_val)
-        if min_val > self.change_co:
+        if min_val > change_co:
             return True
         return False
 
-    def match_image(self, fn, _img, template, threshold=0.06):
+    def match_image(self, fn, _img, template, threshold=0.03):
         res = cv2.matchTemplate(_img, template, self.method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         # print(fn, min_val, max_val)
@@ -125,7 +140,7 @@ class Detector(object):
                 time.sleep(0.2)
                 pyautogui.leftClick(1920 // 2, 1080 // 2 + 50)
                 time.sleep(0.2)
-                pyautogui.leftClick(877, 233)
+                pyautogui.leftClick(888, 155)
                 time.sleep(0.2)
 
     def detect_gm(self):
@@ -208,21 +223,16 @@ def fishing():
     if loc is None:
         return flag
     detector.save_buoy()
-    # 检测鱼鳔处变化趋势
-    threshold = []
-    st = time.time()
-    while time.time() - st < 2:
-        threshold.append(detector.sample_threshold())
-    detector.change_co = np.mean(threshold) + np.std(threshold) * 3
     # 等鱼上钩
     st = time.time()
-    while time.time() - st < 23:
-        if detector.detect_buoy_change():
+    while time.time() - st < 25:
+        if detector.threshold_init_done() and detector.detect_buoy_change():
             pyautogui.rightClick(*loc)
             flag = True
             break
         else:
-            time.sleep(0.05)
+            # 检测鱼鳔处变化趋势
+            detector.sample_threshold()
     return flag
 
 
@@ -234,6 +244,12 @@ failed = 0
 detector.detect_backpack()
 while c < COUNT:
     res = fishing()
+    # try:
+    #     res = fishing()
+    # except :
+    #     import traceback
+    #     traceback.print_exc()
+    #     res = False
     if res:
         c += 1
         failed = 0
@@ -244,7 +260,8 @@ while c < COUNT:
                 pyautogui.press('0')
                 time.sleep(5)
                 detector.detect_backpack()
-                send_mail(mailto_list, "Fishing", "Restart after disconnection.")
+                send_mail(mailto_list, "Fishing",
+                          "Restart after disconnection.")
         if failed == 5:
             print('Failed 5 times!')
             send_mail(mailto_list, "Fishing", "Failed 5 times!")
@@ -253,8 +270,8 @@ while c < COUNT:
     if c % 20 == 0:
         time.sleep(2)
         detector.wrap_up()
-
-    if c % 5 == 0:
         detector.detect_gm()
+        pyautogui.hotkey('alt', 'f')
+        time.sleep(10)
 
 detector.close()

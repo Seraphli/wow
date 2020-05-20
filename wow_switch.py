@@ -8,14 +8,6 @@ def handler(hwnd, windows):
     windows.append((hwnd, win32gui.GetWindowText(hwnd)))
 
 
-all_windows = []
-wow_windows = []
-win32gui.EnumWindows(handler, all_windows)
-for i in all_windows:
-    if "魔兽世界" in i[1]:
-        wow_windows.append(i[0])
-
-
 def switch_to_window(hwnd):
     win32gui.ShowWindow(hwnd, 5)  # SW_SHOW
     win32gui.SetForegroundWindow(hwnd)
@@ -24,9 +16,9 @@ def switch_to_window(hwnd):
 def logout_login():
     pyautogui.press('esc')
     time.sleep(5)
-    pyautogui.click(960, 618)
+    pyautogui.click(960, 630)
     time.sleep(30)
-    pyautogui.click(960, 988)
+    pyautogui.click(960, 990)
     time.sleep(30)
 
 
@@ -42,9 +34,19 @@ def random_move():
 
 time.sleep(10)
 while True:
+    all_windows = []
+    wow_windows = []
+    win32gui.EnumWindows(handler, all_windows)
+    for i in all_windows:
+        if "魔兽世界" in i[1]:
+            wow_windows.append(i[0])
     for i in wow_windows:
-        switch_to_window(i)
-        time.sleep(5)
-        # random_move()
-        logout_login()
+        try:
+            switch_to_window(i)
+            time.sleep(5)
+            # random_move()
+            logout_login()
+        except:
+            pass
+    # logout_login()
     time.sleep(300 + random.randint(100, 200))
